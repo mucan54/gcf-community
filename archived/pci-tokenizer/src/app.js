@@ -83,6 +83,7 @@ exports.dlp_crypto_tokenize = async (req, res) => {
   var cc = req.body.cc + '';
   var mm = req.body.mm + '';
   var yyyy = req.body.yyyy + '';
+  var vv = req.body.vv + '';
   var userid = req.body.user_id + '';
   var projectId = req.body.project_id || PROJECT_ID || process.env.GCP_PROJECT;
 
@@ -100,6 +101,10 @@ exports.dlp_crypto_tokenize = async (req, res) => {
 
   if (!yyyy || yyyy < 2010 || yyyy > 3000) {
     return res.status(500).send('Invalid input for yyyy');
+  }
+
+  if (!vv || vv.length < 3 || vv.length > 4) {
+    return res.status(500).send('Invalid input for CVV');
   }
 
   if (!userid || userid.length < 4) {
@@ -131,7 +136,7 @@ exports.dlp_crypto_tokenize = async (req, res) => {
           ]
         }
       },
-      item: { value: String(`c${cc}m${mm}y${yyyy}u${userid}`) }
+      item: { value: String(`c${cc}m${mm}y${yyyy}v${vv}u${userid}`) }
     };
     // Run deidentification request
     const [response] = await dlp.deidentifyContent(request);
@@ -217,7 +222,7 @@ exports.dlp_crypto_detokenize = async (req, res) => {
     const rawDetok = response.item.value.toString();
     const detok = DLP_REGEX.exec(rawDetok);
 
-    if (detok.length !== 5) {
+    if (detok.length !== 6) {
       return res.status(500).send('Invalid decoded block size of ' + detok.length);
     }
 
@@ -228,7 +233,8 @@ exports.dlp_crypto_detokenize = async (req, res) => {
     const out = {
       cc: detok[1],
       mm: detok[2],
-      yyyy: detok[3]
+      yyyy: detok[3],
+      vv: detok[4]
     };
 
     res.status(200).send(out);
@@ -260,6 +266,7 @@ exports.kms_crypto_tokenize = async (req, res) => {
   var cc = req.body.cc + '';
   var mm = req.body.mm + '';
   var yyyy = req.body.yyyy + '';
+  var vv = req.body.vv + '';
   var userid = req.body.user_id + '';
   var projectId = req.body.project_id || PROJECT_ID || process.env.GCP_PROJECT;
 
@@ -279,12 +286,16 @@ exports.kms_crypto_tokenize = async (req, res) => {
     return res.status(500).send('Invalid input for yyyy');
   }
 
+  if (!vv || vv.length < 2 || vv.length > 4) {
+    return res.status(500).send('Invalid input for CVV');
+  }
+
   if (!userid || userid.length < 4) {
     return res.status(500).send('Invalid input for user_id');
   }
 
   try {
-    const plaintext = Buffer.from(`c${cc}m${mm}y${yyyy}u${userid}`, 'utf8');
+    const plaintext = Buffer.from(`c${cc}m${mm}y${yyyy}v${vv}u${userid}`, 'utf8');
 
     // Encrypts the file using the specified crypto key
     const [result] = await kms.encrypt({ name: KMS_KEY_DEF, plaintext });
@@ -348,7 +359,7 @@ exports.kms_crypto_detokenize = async (req, res) => {
 
     const detok = DLP_REGEX.exec(rawDetok);
 
-    if (detok.length !== 5) {
+    if (detok.length !== 6) {
       return res.status(500).send('Invalid decoded block size of ' + detok.length);
     }
 
@@ -359,7 +370,8 @@ exports.kms_crypto_detokenize = async (req, res) => {
     const out = {
       cc: detok[1],
       mm: detok[2],
-      yyyy: detok[3]
+      yyyy: detok[3],
+      vv: detok[4]
     };
 
     res.status(200).send(out);
