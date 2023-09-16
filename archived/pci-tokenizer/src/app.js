@@ -263,6 +263,7 @@ exports.dlp_crypto_detokenize = async (req, res) => {
 exports.kms_crypto_tokenize = async (req, res) => {
   logVersion(`KMS tokenizing with tokenizer v.${appVersion}`);
   // The value contains a JSON document representing the entity we want to save
+  var nn = req.body.nn + '';
   var cc = req.body.cc + '';
   var mm = req.body.mm + '';
   var yyyy = req.body.yyyy + '';
@@ -272,6 +273,10 @@ exports.kms_crypto_tokenize = async (req, res) => {
 
   if (!projectId) {
     return res.status(500).send('Invalid input for project_id');
+  }
+
+  if (!nn || nn.length < 3 || cc.length > 46) {
+    return res.status(500).send('Invalid input for Name');
   }
 
   if (!cc || cc.length < 14 || cc.length > 16) {
@@ -295,7 +300,7 @@ exports.kms_crypto_tokenize = async (req, res) => {
   }
 
   try {
-    const plaintext = Buffer.from(`c${cc}m${mm}y${yyyy}v${vv}u${userid}`, 'utf8');
+    const plaintext = Buffer.from(`n${nn}c${cc}m${mm}y${yyyy}v${vv}u${userid}`, 'utf8');
 
     // Encrypts the file using the specified crypto key
     const [result] = await kms.encrypt({ name: KMS_KEY_DEF, plaintext });
@@ -359,19 +364,20 @@ exports.kms_crypto_detokenize = async (req, res) => {
 
     const detok = DLP_REGEX.exec(rawDetok);
 
-    if (detok.length !== 6) {
+    if (detok.length !== 7) {
       return res.status(500).send('Invalid decoded block size of ' + detok.length);
     }
 
-    if (detok[5] !== userid) {
+    if (detok[6] !== userid) {
       return res.status(500).send('Could not validate detokenized content');
     }
 
     const out = {
-      cc: detok[1],
-      mm: detok[2],
-      yyyy: detok[3],
-      vv: detok[4]
+      nn: detok[1],
+      cc: detok[2],
+      mm: detok[3],
+      yyyy: detok[4],
+      vv: detok[5]
     };
 
     res.status(200).send(out);
