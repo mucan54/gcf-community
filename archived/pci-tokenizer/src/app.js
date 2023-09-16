@@ -20,7 +20,7 @@ const VERSION_LOGGING = config.get('logging.version');
 
 const DLP = require('@google-cloud/dlp');
 const dlp = new DLP.DlpServiceClient();
-const DLP_REGEX = /n([A-Za-z]+)c(\d+)m(\d+)y(\d+)v(\d+)u(.*)/;
+const DLP_REGEX = /n([A-Za-z\s]+)c(\d+)m(\d+)y(\d+)v(\d+)u(.*)/;
 const DLP_SURROGATE_TYPE = 'TOKEN';
 const DLP_CUSTOM_INFO_TYPE = [{
   infoType: { name: DLP_SURROGATE_TYPE },
