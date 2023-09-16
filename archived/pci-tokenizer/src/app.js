@@ -363,7 +363,7 @@ exports.kms_crypto_detokenize = async (req, res) => {
       return res.status(500).send('Invalid decoded block size of ' + detok.length);
     }
 
-    if (detok[4] !== userid) {
+    if (detok[5] !== userid) {
       return res.status(500).send('Could not validate detokenized content');
     }
 
