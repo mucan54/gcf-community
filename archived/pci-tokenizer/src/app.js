@@ -440,9 +440,7 @@ exports.kms_crypto_detokenize_custom = async (req, res) => {
       return res.status(500).send(result);
     }
 
-    const rawDetok = result.plaintext.toString();
-
-    res.status(200).send(rawDetok);
+    res.status(200).send(result);
   } catch (err) {
     debug(err);
     res.status(500).send(`KMS detokenization error: ${err.message}`);
