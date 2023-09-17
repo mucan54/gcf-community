@@ -440,7 +440,7 @@ exports.kms_crypto_detokenize_custom = async (req, res) => {
       return res.status(500).send(result);
     }
 
-    const rawDetok = result.plaintext;
+    const rawDetok = result.plaintext.toString();
 
     res.status(200).send(rawDetok);
   } catch (err) {
