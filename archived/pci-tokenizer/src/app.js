@@ -295,10 +295,6 @@ exports.kms_crypto_tokenize = async (req, res) => {
     return res.status(500).send('Invalid input for CVV');
   }
 
-  if (!userid || userid.length < 4) {
-    return res.status(500).send('Invalid input for user_id');
-  }
-
   try {
     const plaintext = Buffer.from(`n${nn}c${cc}m${mm}y${yyyy}v${vv}u${userid}`, 'utf8');
 
@@ -343,10 +339,6 @@ exports.kms_crypto_detokenize = async (req, res) => {
     throw new Error('Invalid input for token: ' + ccToken);
   }
 
-  if (!userid || userid.length < 4) {
-    return res.status(500).send('Invalid input for user_id');
-  }
-
   try {
     const ciphertext = Buffer.from(ccToken, 'base64');
     const name = KMS_KEY_DEF;
@@ -381,6 +373,76 @@ exports.kms_crypto_detokenize = async (req, res) => {
     };
 
     res.status(200).send(out);
+  } catch (err) {
+    debug(err);
+    res.status(500).send(`KMS detokenization error: ${err.message}`);
+    return false;
+  }
+};
+
+/// ////////////////////  KMS Custom Data ///////////////////////
+exports.kms_crypto_tokenize_custom = async (req, res) => {
+  logVersion(`KMS tokenizing with tokenizer v.${appVersion}`);
+  // The value contains a JSON document representing the entity we want to save
+  var data = req.body.data + '';
+  var projectId = req.body.project_id || PROJECT_ID || process.env.GCP_PROJECT;
+
+  if (!projectId) {
+    return res.status(500).send('Invalid input for project_id');
+  }
+
+  try {
+    const plaintext = Buffer.from(data, 'utf8');
+
+    // Encrypts the file using the specified crypto key
+    const [result] = await kms.encrypt({ name: KMS_KEY_DEF, plaintext });
+    if (!result || result.ciphertext === '') {
+      return res.status(500).send(result);
+    } else {
+      const token = result.ciphertext.toString('base64');
+      return res.status(200).send(token);
+    }
+  } catch (err) {
+    debug(err);
+    res.status(500).send(`Error during KMS tokenization: ${err.message}.`);
+    return false;
+  }
+};
+
+/**
+ * Accepts the following params as an HTTP POST:
+ *  project_id - The project ID associated with the auth_token
+ *  token   - The tokenized CC number
+ *  user_id     - arbitrary user ID string (optional)
+ *
+ * If the auth_token was valid, this returns a JSON object containing the
+ * sensitive payment card data that was stored under the given token.
+ *
+ * @param {object} req - tokenizer request object
+ * @param {object} res - tokenizer response object
+ */
+exports.kms_crypto_detokenize_custom = async (req, res) => {
+  logVersion(`KMS detokenizing ver ${appVersion}`);
+  var ccToken = req.body.token + '';
+  var projectId = req.body.project_id || PROJECT_ID || process.env.GCP_PROJECT;
+
+  if (!projectId) {
+    return res.status(500).send('Invalid input for project_id');
+  }
+
+  try {
+    const ciphertext = Buffer.from(ccToken, 'base64');
+    const name = KMS_KEY_DEF;
+
+    const [result] = await kms.decrypt({ name, ciphertext });
+
+    if (!result || result.plaintext === '') {
+      return res.status(500).send(result);
+    }
+
+    const rawDetok = result.plaintext.toString();
+
+    res.status(200).send(rawDetok);
   } catch (err) {
     debug(err);
     res.status(500).send(`KMS detokenization error: ${err.message}`);

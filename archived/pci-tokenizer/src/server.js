@@ -43,6 +43,14 @@ express.post('/tokenize/kms', (req, res) => {
   return app.kms_crypto_tokenize(req, res);
 });
 
+express.post('/detokenize/custom_kms', (req, res) => {
+  return app.kms_crypto_detokenize_custom(req, res);
+});
+
+express.post('/tokenize/custom_kms', (req, res) => {
+  return app.kms_crypto_tokenize_custom(req, res);
+});
+
 express.listen(port, (err) => {
   if (err) {
     return console.log('Express server error', err);
